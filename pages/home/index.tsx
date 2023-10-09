@@ -37,9 +37,11 @@ const Home = () => {
 				redirect();
 			} else {
 				setIsLoading(false);
+				console.log("hello");
 			}
 		}
-	}, []);
+	}, [currentUser]);
+
 	const getPosts = async () => {
 		if (currentUser) {
 			try {
@@ -70,8 +72,16 @@ const Home = () => {
 					{isPostsLoading
 						? null
 						: posts
-						? posts.map((post) => {
-								return <Post post={post} key={post.id} user={post.user} />;
+						? posts.map((post: any) => {
+								return (
+									<Post
+										setPosts={setPosts}
+										post={post}
+										key={post.id}
+										user={post.user}
+										getPosts={getPosts}
+									/>
+								);
 						  })
 						: ""}
 				</div>

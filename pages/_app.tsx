@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import HomeNav from "@/components/home-nav";
 export default function App({ Component, pageProps, router }: AppProps) {
 	return (
-		<div className="overflow-x-hidden transition-colors duration-300 dark:bg-[#292929]">
+		<div className="overflow-x-hidden transition-colors duration-300 dark:bg-[#292929] ">
 			<Toaster />
 			<SPProvider>
 				<AnimatePresence initial={false} mode="wait">

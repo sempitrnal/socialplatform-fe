@@ -18,7 +18,7 @@ import { get } from "http";
 import { Camera } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
+import { MutableRefObject, useEffect, useRef, useState } from "react";
 import { ClipLoader } from "react-spinners";
 const ProfilePicture = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -29,7 +29,7 @@ const ProfilePicture = () => {
 	);
 	const [user, setUser] = useState<any>();
 	const [imageHover, setImageHover] = useState<boolean>(false);
-	const ref = useRef();
+	const ref = useRef<HTMLInputElement>();
 
 	const router = useRouter();
 	const { currentUser } = useSP();
@@ -109,7 +109,7 @@ const ProfilePicture = () => {
 	return (
 		<div className="flex flex-col items-center justify-center min-h-screen">
 			<input
-				ref={ref}
+				ref={ref as MutableRefObject<HTMLInputElement>}
 				type="file"
 				accept="image/*"
 				onChange={handleFileInputChange}
@@ -135,7 +135,9 @@ const ProfilePicture = () => {
 							>
 								<Image
 									onClick={() => {
-										ref.current.click();
+										if (ref.current) {
+											ref.current.click();
+										}
 									}}
 									className="shadow-md cursor-pointer overflow-hidden w-[200px] h-[200px] rounded-full object-cover "
 									src={previewUrl}
@@ -147,7 +149,9 @@ const ProfilePicture = () => {
 									{imageHover && (
 										<motion.div
 											onClick={() => {
-												ref.current.click();
+												if (ref.current) {
+													ref.current.click();
+												}
 											}}
 											initial={{ opacity: 0 }}
 											animate={{ opacity: 1 }}

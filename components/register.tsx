@@ -140,7 +140,7 @@ const Register = () => {
 		});
 		let user = JSON.parse(localStorage.getItem("user")!);
 		if (result !== null) {
-			setUser((prev) => {
+			setUser((prev: any) => {
 				return { ...prev, newlyRegistered: true };
 			});
 		}

@@ -64,6 +64,7 @@ const HomeNav = () => {
 	};
 	const createPostRef = useRef<any>();
 	const imageUploadRef = useRef<any>();
+	const searchRef = useRef<any>();
 	const logout = () => {
 		localStorage.removeItem("user");
 		const result = router.push("/login");
@@ -84,6 +85,7 @@ const HomeNav = () => {
 		setIsFocused(true);
 	};
 	const searchHandler = (e: React.FormEvent<HTMLInputElement>) => {
+		console.log("rendered");
 		const { value, name } = e.target as HTMLInputElement;
 		setSearch(value);
 		if (value.length > 0) {
@@ -109,13 +111,7 @@ const HomeNav = () => {
 
 		setPost({ ...post, [name]: value });
 	};
-	if (isLoading) {
-		return (
-			<Layout>
-				<ClipLoader />
-			</Layout>
-		);
-	}
+
 	function postHandler(event: FormEvent<HTMLFormElement>): void {
 		event.preventDefault();
 
@@ -151,6 +147,13 @@ const HomeNav = () => {
 			reader.readAsDataURL(file);
 		}
 	};
+	if (isLoading) {
+		return (
+			<Layout>
+				<ClipLoader />
+			</Layout>
+		);
+	}
 	return (
 		<nav className="fixed top-0 left-0 right-0 z-50 flex justify-between px-20 py-5 bg-white shadow-sm">
 			<Tooltip
@@ -243,6 +246,7 @@ const HomeNav = () => {
 					<BosInput
 						changeHandler={searchHandler}
 						isValid={true}
+						thisRef={searchRef}
 						focusHandler={focusHandler}
 						blurHandler={() => {
 							setIsFocused(false);
@@ -271,6 +275,8 @@ const HomeNav = () => {
 												<div
 													onClick={() => {
 														router.push(`/${e.username}`);
+														setSearch("");
+														searchRef.current.value = "";
 													}}
 													className="px-1 py-2 transition duration-150 rounded-md cursor-pointer hover:bg-stone-100"
 													key={e.id}
