@@ -7,7 +7,11 @@ import { ClipLoader } from "react-spinners";
 import BosInput from "./myinput";
 import Select from "./myselect";
 import { Button } from "./ui/button";
-import { capitalizeFirstLetter } from "@/utils/utils";
+import {
+	capitalizeFirstLetter,
+	getDateYYYYMMDD,
+	pronounOptions,
+} from "@/utils/utils";
 
 export interface RegisterDto {
 	firstName: string;
@@ -43,7 +47,7 @@ export type RegisterInputErrors = {
 	confirmPassword: RegisterInputErrorProps;
 	[key: string]: RegisterInputErrorProps;
 };
-interface InputRefProps {
+export interface InputRefProps {
 	firstName: React.RefObject<HTMLInputElement>;
 	lastName: React.RefObject<HTMLInputElement>;
 	username: React.RefObject<HTMLInputElement>;
@@ -123,12 +127,7 @@ const Register = () => {
 		},
 		// Initialize errors for each input field
 	});
-	const pronounOptions = [
-		{ name: "She/Her", value: 1 },
-		{ name: "He/Him", value: 2 },
-		{ name: "They/Them", value: 3 },
-		{ name: "I prefer not to say", value: 0 },
-	];
+
 	const router = useRouter();
 	const passwordRegex =
 		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$/;
@@ -187,6 +186,7 @@ const Register = () => {
 			}
 		}
 	};
+
 	const inputHandler = (e: React.FormEvent<HTMLInputElement>) => {
 		const { name, value } = e.target as HTMLInputElement;
 		setRequest({ ...request, [name]: value });
@@ -389,7 +389,7 @@ const Register = () => {
 					<BosInput
 						changeHandler={inputHandler}
 						label="Nickname (Optional)"
-						name="nickName"
+						name="nickname"
 						focusHandler={focusHandler}
 						blurHandler={blurHandler}
 						thisRef={inputRefs.nickname}

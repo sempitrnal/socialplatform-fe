@@ -1,6 +1,12 @@
 "use client";
 
 import { RegisterDto } from "@/components/register";
+import { toast } from "@/components/ui/use-toast";
+import {
+	HttpTransportType,
+	HubConnection,
+	HubConnectionBuilder,
+} from "@microsoft/signalr";
 import axios, { Axios, AxiosError } from "axios";
 import jwtDecode from "jwt-decode";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -15,6 +21,8 @@ type SPContextType = {
 	getUser?: any;
 	userData?: any;
 	setUserData?: any;
+	notificationConnection?: HubConnection | null;
+	setNotificationConnection?: any;
 };
 
 const SPContextDefaultValues: SPContextType = {
@@ -27,6 +35,8 @@ const SPContextDefaultValues: SPContextType = {
 	getUser: () => {},
 	userData: {},
 	setUserData: () => {},
+	notificationConnection: null,
+	setNotificationConnection: () => {},
 };
 const SPContext = createContext<SPContextType>(SPContextDefaultValues);
 
@@ -38,6 +48,9 @@ export interface UserDto {
 	password: string;
 }
 export function SPProvider({ children }: { children: React.ReactNode }) {
+	const [notificationConnection, setNotificationConnection] =
+		useState<HubConnection>();
+
 	//login states
 
 	const [currentUser, setUser] = useState<any>(
@@ -104,6 +117,48 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 			setRegisterError(error.response.data);
 		}
 	};
+
+	useEffect(() => {
+		if (userData) {
+			const notificationConnection = new HubConnectionBuilder()
+				.withUrl(`${process.env.BACKEND_BASE_URL}/notifications`, {
+					skipNegotiation: true,
+					transport: HttpTransportType.WebSockets,
+				})
+				.withAutomaticReconnect()
+				.build();
+
+			const startConnection = async () => {
+				await notificationConnection.start().then(fulfilled, rejected);
+			};
+			setNotificationConnection(notificationConnection);
+			notificationConnection.on("UserJoined", (userId) => {});
+
+			notificationConnection.on(
+				"ReceiveLikeNotification",
+				(message, postId) => {
+					// Handle the "Like" notification
+					// Display a notification to the user, update the UI, etc.
+					toast({
+						title: "Notification",
+						description: message,
+					});
+				}
+			);
+			const fulfilled = async () => {
+				console.log("connected");
+				console.log(userData?.id.toString());
+				await notificationConnection.send(
+					"OnConnectedAsync",
+					userData?.id.toString()
+				);
+			};
+			const rejected = () => {
+				console.log("rejected");
+			};
+			startConnection();
+		}
+	}, [userData]);
 	const value = {
 		login,
 		register,
@@ -114,6 +169,8 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 		userData,
 		getUser,
 		setUserData,
+		notificationConnection,
+		setNotificationConnection,
 	};
 	useEffect(() => {}, []);
 	return <SPContext.Provider value={value}>{children}</SPContext.Provider>;

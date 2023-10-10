@@ -60,8 +60,8 @@ const BosInput = ({
 	const _100YrsAgo = `${minYear}-${minMonth}-${minDay}`;
 	const [isFocused, setIsFocused] = useState(false);
 	return (
-		<div className="">
-			<div className="relative z-0">
+		<div className="w-full">
+			<div className="relative z-0 ">
 				<input
 					onBlur={(e) => {
 						if (blurHandler) {
@@ -104,7 +104,7 @@ const BosInput = ({
 					} w-full  outline-none 
            bg-[#f9f9f9]   focus:bg-white  
            border 
-           hover:bg-[#f7f7f7]
+           hover:bg-[#f7f7f7] 
            ${
 							!isValid
 								? "border-[#e55f5f] focus:border-[#e55f5f] text-[#e55f5f] "
@@ -116,16 +116,38 @@ const BosInput = ({
            dark:border-[#292929] dark:focus:border-[#7a7a7a]
            
            dark:text-white transition-all duration-300  dark:shadow-none  
+					 ${disabled ? "text-stone-400 " : "text-black"}
             `}
 				/>
-				<label
-					htmlFor={name}
-					className={`absolute font-[400] dark:bg-[#292929]   rounded-md pointer-events-none left-4  top-[10.5px] text-sm dark:text-white  ${
-						isValid ? "text-[#a0a0a0]" : "text-[#e55f5f]"
-					} `}
-				>
-					{label}
-				</label>
+				<AnimatePresence initial={false}>
+					{!disabled ? (
+						<motion.label
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							transition={{ delay: 0.1 }}
+							htmlFor={name}
+							className={`absolute font-[400] dark:bg-[#292929]   rounded-md pointer-events-none left-4  top-[10.5px] text-sm dark:text-white  ${
+								isValid ? "text-[#a0a0a0]" : "text-[#e55f5f]"
+							} `}
+						>
+							{label}
+						</motion.label>
+					) : disabled ? (
+						value == "" || value == null ? (
+							<motion.label
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								transition={{ delay: 0.1 }}
+								htmlFor={name}
+								className={`absolute font-[400] dark:bg-[#292929]   rounded-md pointer-events-none left-4  top-[10.5px] text-sm dark:text-white  ${
+									isValid ? "text-[#a0a0a0]" : "text-[#e55f5f]"
+								} `}
+							>
+								{label}
+							</motion.label>
+						) : null
+					) : null}
+				</AnimatePresence>
 				{type === "date" && (
 					<div className="absolute scale-75 pointer-events-none top-2 hover:text-[#333] right-3">
 						<Calendar />
@@ -173,7 +195,7 @@ const BosInput = ({
 								isValid ? "right-[10px]" : "right-[35px]"
 							}   top-[10px] scale-75 cursor-pointer hover:text-[#646464] transition-all duration-300"`}
 						>
-							{!showPassword[name] ? <Eye /> : <EyeOff />}
+							{!showPassword[name] ? <EyeOff /> : <Eye />}
 						</motion.div>
 					)}
 				</AnimatePresence>

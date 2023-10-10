@@ -4,7 +4,7 @@ import { Avatar, AvatarImage } from "./ui/avatar";
 export interface UserDialogProps {
 	thisRef?: any;
 	user: any;
-	thisKey: any;
+	thisKey?: any;
 }
 const UserDialog = ({ thisRef, user, thisKey }: UserDialogProps) => {
 	const router = useRouter();

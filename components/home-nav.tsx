@@ -67,15 +67,14 @@ const HomeNav = () => {
 	const searchRef = useRef<any>();
 	const logout = () => {
 		localStorage.removeItem("user");
-		const result = router.push("/login");
+
 		setUser(undefined);
 		setUserData(undefined);
-		if (result != null) {
-			toast({
-				title: "Logged out",
-				description: "You have been logged out!",
-			});
-		}
+
+		toast({
+			title: "Logged out",
+			description: "You have been logged out!",
+		});
 	};
 	const [search, setSearch] = useState<string>("");
 	const [isFocused, setIsFocused] = useState<boolean>(false);
@@ -150,7 +149,7 @@ const HomeNav = () => {
 	if (isLoading) {
 		return (
 			<Layout>
-				<ClipLoader />
+				<div className=""></div>
 			</Layout>
 		);
 	}
@@ -333,7 +332,7 @@ const HomeNav = () => {
 				<DropdownMenu>
 					<DropdownMenuTrigger className="transition-opacity outline-none ">
 						<div className="flex items-center">
-							<Avatar className="shadow-sm ">
+							<Avatar className="border shadow-sm ">
 								<AvatarImage
 									className="object-cover"
 									src={

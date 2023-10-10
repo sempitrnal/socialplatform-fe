@@ -15,7 +15,12 @@ import {
 } from "./ui/dialog";
 import { get } from "http";
 import UserDialog from "./user-dialog";
-import { memo, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
+import {
+	HttpTransportType,
+	HubConnection,
+	HubConnectionBuilder,
+} from "@microsoft/signalr";
 
 export interface PostProps {
 	post: Post;
@@ -32,41 +37,58 @@ export type Post = {
 	postCreatedAt: string;
 	likes: any;
 	comments: any;
+	user: any;
 };
 export type PostLike = {
 	id: number;
 	user: any;
 	userId: number;
 };
+
 const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
-	console.log(post);
-	const { userData } = useSP();
+	const { userData, notificationConnection } = useSP();
 	const [comment, setComment] = useState<string>("");
 	const commentInputRef = useRef<any>(null);
 	const postLikesRef = useRef();
-	const likeAPost = async (userId: number, postId: number) => {
-		try {
-			axios
-				.post(
-					`${process.env.API_BASE_URL}/post/likeapost?userId=${userId}&postId=${postId}`
-				)
-				.then((e) => {
-					setPosts((prev) => {
-						return prev.map((e: any) => {
-							if (e.id === postId) {
-								return {
-									...e,
-									likes: [
-										...e.likes,
-										{ user: userData, userId: userId, id: e.likes.length + 1 },
-									],
-								};
-							}
-							return e;
+
+	const likeAPost = async (
+		userId: number,
+		postId: number,
+		postUserId: number
+	) => {
+		if (notificationConnection?.state === "Connected") {
+			try {
+				axios
+					.post(
+						`${process.env.API_BASE_URL}/post/likeapost?userId=${userId}&postId=${postId}`
+					)
+					.then(async (e) => {
+						setPosts((prev) => {
+							return prev.map((e: any) => {
+								if (e.id === postId) {
+									return {
+										...e,
+										likes: [
+											...e.likes,
+											{
+												user: userData,
+												userId: userId,
+												id: e.likes.length + 1,
+											},
+										],
+									};
+								}
+								return e;
+							});
 						});
+						await notificationConnection
+							?.invoke("NotifyLike", userId, postId, postUserId.toString())
+							.catch((error) => {
+								console.log(error);
+							});
 					});
-				});
-		} catch (error) {}
+			} catch (error) {}
+		}
 	};
 
 	const unlikeAPost = async (userId: number, postId: number) => {
@@ -195,7 +217,7 @@ const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
 				) : (
 					<AiOutlineStar
 						onClick={() => {
-							likeAPost(userData?.id, post.id);
+							likeAPost(userData?.id, post.id, post.user.id);
 						}}
 						className="text-2xl text-yellow-400 cursor-pointer"
 					/>

@@ -6,7 +6,7 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useSP } from "@/context/context";
-import { getPronouns } from "@/utils/utils";
+import { getImageName, getPronouns } from "@/utils/utils";
 import axios from "axios";
 
 import Post from "@/components/post";
@@ -34,6 +34,14 @@ const User = () => {
 	const { toast } = useToast();
 	const followingDialogRef = useRef(null);
 	const followerDialogRef = useRef(null);
+	const redirect = async () => {
+		router.push("/");
+		toast({
+			title: "You are not logged in",
+			description: "Please login to continue",
+		});
+	};
+
 	const getUser = async (username: string) => {
 		await axios
 			.get(
@@ -49,6 +57,7 @@ const User = () => {
 				setUserNotFound(true);
 			});
 	};
+
 	const getPosts = async (id: string) => {
 		try {
 			await axios.get(`${process.env.API_BASE_URL}/posts/${id}`).then((e) => {
@@ -124,7 +133,11 @@ const User = () => {
 			getPosts(user.id);
 		}
 	}, [user]);
-
+	useEffect(() => {
+		if (currentUser == undefined) {
+			redirect();
+		}
+	}, [currentUser]);
 	if (isLoading)
 		return (
 			<Layout>
@@ -182,7 +195,7 @@ const User = () => {
 								<img
 									src={`https://localhost:7221/images/users/${user.imageName}`}
 									alt=""
-									className="rounded-full w-[6rem] h-[6rem] object-cover"
+									className="rounded-full w-[6rem] h-[6rem] object-cover shadow-md hover:opacity-80 transition"
 								/>
 							</DialogTrigger>
 							<DialogContent>
@@ -259,11 +272,7 @@ const User = () => {
 														<Avatar className="object-cover w-8 h-8">
 															<AvatarImage
 																className="object-cover w-full"
-																src={
-																	e.imageName == ""
-																		? "/static/default-profile-pic.png"
-																		: `https://localhost:7221/images/users/${e.imageName}`
-																}
+																src={getImageName(e)}
 															/>
 														</Avatar>
 														<div className="">
@@ -283,7 +292,13 @@ const User = () => {
 					</div>
 					{currentUser ? (
 						currentUser.userId == user.id ? (
-							<Button>Edit profile</Button>
+							<Button
+								onClick={() => {
+									router.push(`/profile/${currentUser.username}`);
+								}}
+							>
+								Edit profile
+							</Button>
 						) : user?.followers.some((e: any) => e.id == userData.id) ? (
 							<Button
 								variant="outline"

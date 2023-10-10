@@ -1,20 +1,18 @@
 "use client";
 
 import HomeNav from "@/components/home-nav";
-import Layout from "@/components/layout";
 import Post from "@/components/post";
+import PostSkeleton from "@/components/post-skeleton";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { useSP } from "@/context/context";
-import { getFormattedDate, getTimeAgo } from "@/utils/utils";
-import { Tooltip } from "@chakra-ui/react";
 import axios from "axios";
 import Head from "next/head";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AiFillStar } from "react-icons/ai";
-import { ClipLoader } from "react-spinners";
+import { HttpTransportType, HubConnectionBuilder } from "@microsoft/signalr";
 const Home = () => {
 	const { toast } = useToast();
 	const { currentUser, setUser, getUser, userData } = useSP();
@@ -23,6 +21,7 @@ const Home = () => {
 	const [posts, setPosts] = useState<any>();
 	const [isPostsLoading, setIsPostsLoading] = useState<boolean>(true);
 	const router = useRouter();
+
 	const redirect = async () => {
 		router.push("/");
 		toast({
@@ -37,7 +36,6 @@ const Home = () => {
 				redirect();
 			} else {
 				setIsLoading(false);
-				console.log("hello");
 			}
 		}
 	}, [currentUser]);
@@ -60,6 +58,9 @@ const Home = () => {
 		getPosts();
 	}, [currentUser]);
 
+	if (!userData) {
+		return <div></div>;
+	}
 	return (
 		<>
 			<Head>
@@ -67,25 +68,84 @@ const Home = () => {
 			</Head>
 			<HomeNav />
 			<div className="flex justify-center gap-10 mt-[5.5rem]">
-				<div className="w-1/4"></div>
-				<div className="flex flex-col justify-start w-1/2 min-h-screen gap-10 px-10 py-10 border-l border-r">
-					{isPostsLoading
-						? null
-						: posts
-						? posts.map((post: any) => {
-								return (
-									<Post
-										setPosts={setPosts}
-										post={post}
-										key={post.id}
-										user={post.user}
-										getPosts={getPosts}
-									/>
-								);
-						  })
-						: ""}
+				<div className="fixed left-0 w-[30%] p-10">
+					<div
+						onClick={() => {
+							router.push(`/${userData.username}`);
+						}}
+						className="p-5 py-3 transition rounded-lg shadow-md cursor-pointer hover:bg-stone-100"
+					>
+						<div className="flex items-center gap-3 ">
+							<Avatar className="w-12 h-12">
+								<AvatarImage
+									className="object-cover w-full"
+									src={
+										userData.imageName == ""
+											? "/static/default-profile-pic.png"
+											: `https://localhost:7221/images/users/${userData.imageName}`
+									}
+								/>
+							</Avatar>
+							<div className="">
+								{userData.firstName} {userData.lastName}
+							</div>
+						</div>
+					</div>
 				</div>
-				<div className="w-1/4"></div>
+				<div className="flex flex-col justify-start w-[40%] min-h-screen gap-10 px-10 py-10 border-l border-r">
+					{isPostsLoading ? (
+						<div className="flex flex-col gap-10">
+							<PostSkeleton />
+							<PostSkeleton />
+							<PostSkeleton withPic />
+						</div>
+					) : posts ? (
+						posts.map((post: any) => {
+							return (
+								<Post
+									setPosts={setPosts}
+									post={post}
+									key={post.id}
+									user={post.user}
+									getPosts={getPosts}
+								/>
+							);
+						})
+					) : (
+						""
+					)}
+				</div>
+				<div className="fixed right-0 w-[30%] p-10">
+					<p className="text-sm font-medium text-stone-500">
+						Suggested for you
+					</p>
+					<div className="flex flex-col gap-5 my-5">
+						{Array.from(Array(5).keys()).map((e) => {
+							return (
+								<div
+									key={e}
+									className="flex items-center justify-between gap-2 p-2 border rounded-md"
+								>
+									<div className="flex items-center gap-2 ">
+										<Skeleton className="w-10 h-10 rounded-full" />
+										<div className="flex flex-col gap-2">
+											<div className="flex gap-2">
+												<Skeleton className="h-3 w-14" />
+												<Skeleton className="w-20 h-3" />
+											</div>
+											<div className="flex gap-2">
+												<Skeleton className="w-[10rem] h-2" />
+											</div>
+										</div>
+									</div>
+									<Button className="h-6 p-2 text-xs" variant="outline">
+										Follow
+									</Button>
+								</div>
+							);
+						})}
+					</div>
+				</div>
 			</div>
 		</>
 	);

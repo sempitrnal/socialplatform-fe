@@ -34,13 +34,29 @@ const ProfilePicture = () => {
 	const router = useRouter();
 	const { currentUser } = useSP();
 	const { toast } = useToast();
+	const redirect = async () => {
+		router.push("/");
+		toast({
+			title: "You are not logged in",
+			description: "Please login to continue",
+		});
+	};
+	const check = async () => {
+		if ((await router.back()) != null)
+			toast({
+				title: "Invalid request",
+				description: "Page is only for newly registered users",
+			});
+	};
 	useEffect(() => {
 		if (typeof window !== "undefined") {
 			if (currentUser == undefined) {
-				// router.push("/");
+				redirect();
 			} else {
 				if (currentUser.newlyRegistered) {
 					setIsLoading(false);
+				} else {
+					check();
 				}
 			}
 		}

@@ -16,10 +16,11 @@ const Select = ({
 	value,
 }: SelectProps) => {
 	return (
-		<div className="relative">
+		<div className="relative w-full">
 			<select
 				required
 				id={name}
+				value={value}
 				name={name}
 				onChange={changeHandler}
 				className={`rounded-md py-2 px-4 w-full  outline-none 
