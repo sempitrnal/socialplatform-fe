@@ -13,9 +13,11 @@ import Head from "next/head";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { HttpTransportType, HubConnectionBuilder } from "@microsoft/signalr";
+import Image from "next/image";
 const Home = () => {
 	const { toast } = useToast();
-	const { currentUser, setUser, getUser, userData } = useSP();
+	const { currentUser, setUser, getUser, userData, notificationConnection } =
+		useSP();
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [notifications, setNotifications] = useState<any[]>([]);
 	const [posts, setPosts] = useState<any>();
@@ -55,6 +57,14 @@ const Home = () => {
 		}
 	};
 	useEffect(() => {
+		notificationConnection?.on(
+			"ReceiveLikeNotification",
+			(name, message, userId, postId) => {
+				getPosts();
+			}
+		);
+	}, [posts]);
+	useEffect(() => {
 		getPosts();
 	}, [currentUser]);
 
@@ -68,7 +78,7 @@ const Home = () => {
 			</Head>
 			<HomeNav />
 			<div className="flex justify-center gap-10 mt-[5.5rem]">
-				<div className="fixed left-0 w-[30%] p-10">
+				<div className="  left-0 hidden lg:flex  lg:flex-col h-full justify-between fixed w-[30%] p-10">
 					<div
 						onClick={() => {
 							router.push(`/${userData.username}`);
@@ -91,8 +101,14 @@ const Home = () => {
 							</div>
 						</div>
 					</div>
+					<Image
+						src="/static/chopper.gif"
+						width={400}
+						height={400}
+						alt="chopper"
+					/>
 				</div>
-				<div className="flex flex-col justify-start w-[40%] min-h-screen gap-10 px-10 py-10 border-l border-r">
+				<div className="flex flex-col justify-start w-full lg:w-[40%] min-h-screen gap-10 px-10 py-10 border-l border-r">
 					{isPostsLoading ? (
 						<div className="flex flex-col gap-10">
 							<PostSkeleton />
@@ -103,6 +119,7 @@ const Home = () => {
 						posts.map((post: any) => {
 							return (
 								<Post
+									thisKey={post.id}
 									setPosts={setPosts}
 									post={post}
 									key={post.id}
@@ -115,7 +132,7 @@ const Home = () => {
 						""
 					)}
 				</div>
-				<div className="fixed right-0 w-[30%] p-10">
+				<div className="fixed hidden lg:block right-0 w-[30%] p-10">
 					<p className="text-sm font-medium text-stone-500">
 						Suggested for you
 					</p>

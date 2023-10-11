@@ -35,6 +35,7 @@ import { useToast } from "./ui/use-toast";
 import { useRef } from "react";
 import { RiImageAddFill } from "react-icons/ri";
 import Image from "next/image";
+import { getImageName, getTimeAgo } from "@/utils/utils";
 export interface Post {
 	userId: number;
 	description: string;
@@ -54,17 +55,25 @@ const HomeNav = () => {
 	};
 	const [post, setPost] = useState<Post>(PostDefaultValues);
 	const [notifications, setNotifications] = useState<any[]>([]);
+	const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>();
 	const router = useRouter();
-	const redirect = async () => {
-		router.push("/");
-		toast({
-			title: "You are not logged in",
-			description: "Please login to continue",
-		});
-	};
+
 	const createPostRef = useRef<any>();
 	const imageUploadRef = useRef<any>();
 	const searchRef = useRef<any>();
+	const getNotifications = async () => {
+		await axios
+			.get(`${process.env.API_BASE_URL}/user/notifications/${userData?.id}`)
+			.then((e) => {
+				setNotifications(e.data);
+			})
+			.catch((e) => {
+				console.log(e);
+			});
+	};
+	useEffect(() => {
+		getNotifications();
+	}, [userData]);
 	const logout = () => {
 		localStorage.removeItem("user");
 
@@ -146,6 +155,42 @@ const HomeNav = () => {
 			reader.readAsDataURL(file);
 		}
 	};
+	const notificationDialogRef = useRef<any>();
+	const openNotifications = async () => {
+		setIsNotificationsOpen(!isNotificationsOpen);
+		if (!isNotificationsOpen) {
+			setTimeout(async () => {
+				await axios
+					.put(
+						`${process.env.API_BASE_URL}/user/readnotifications/${userData?.id}`
+					)
+					.then((e) => {
+						getNotifications();
+					})
+					.catch((error) => {
+						console.log(error);
+					});
+			}, 500);
+		}
+	};
+	useEffect(() => {
+		const handleClickOutside = (event) => {
+			if (
+				notificationDialogRef.current &&
+				!notificationDialogRef.current.contains(event.target)
+			) {
+				setIsNotificationsOpen(false);
+			}
+		};
+		if (isNotificationsOpen) {
+			setTimeout(() => {
+				document.addEventListener("click", handleClickOutside);
+			}, 1);
+		}
+		return () => {
+			document.removeEventListener("click", handleClickOutside);
+		};
+	}, [isNotificationsOpen]);
 	if (isLoading) {
 		return (
 			<Layout>
@@ -318,17 +363,88 @@ const HomeNav = () => {
 						<MessageCircle />
 					</Link>
 				</div>
-				<DropdownMenu>
-					<DropdownMenuTrigger className="outline-none ">
-						<div className="rounded-full h-12 w-12 flex justify-center items-center bg-[#dddddd] hover:bg-[#cfcfcf] transition duration-300">
-							<Bell />
-						</div>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent className="w-[20rem] translate-x-[-8rem] translate-y-1 min-h-[40rem] ">
-						<DropdownMenuLabel>Notifications</DropdownMenuLabel>
-						<Separator />
-					</DropdownMenuContent>
-				</DropdownMenu>
+
+				<div className="rounded-full h-12 w-12 flex justify-center items-center bg-[#dddddd] hover:bg-[#cfcfcf] transition duration-300 relative ">
+					<Bell onClick={openNotifications} className="cursor-pointer" />
+					<AnimatePresence initial={false}>
+						{notifications.filter((e) => e.isRead == false).length > 0 && (
+							<motion.div
+								initial={{ y: 5, opacity: 0 }}
+								animate={{ y: 0, opacity: 1 }}
+								exit={{ scale: 0, opacity: 0 }}
+								className="absolute flex items-center justify-center w-5 h-5 p-2 text-xs text-white bg-red-400 rounded-full -top-1 -right-1"
+							>
+								{notifications.filter((e) => e.isRead == false).length}
+							</motion.div>
+						)}
+					</AnimatePresence>
+					<AnimatePresence>
+						{isNotificationsOpen && (
+							<motion.div
+								ref={notificationDialogRef}
+								initial={{ y: 5, opacity: 0 }}
+								animate={{ y: 0, opacity: 1 }}
+								exit={{ y: 5, opacity: 0 }}
+								className="absolute left-[-270px] z-[999] w-[20rem] text-sm bg-white rounded-md shadow-md top-14 h-max overflow-hidden"
+							>
+								<div className="">
+									<h2 className="w-full px-5 py-3 font-medium text-white bg-stone-700">
+										Notifications
+									</h2>
+									<div className="flex flex-col pt-2 ">
+										{notifications.map((e) => {
+											console.log(e);
+											return (
+												<div
+													className={`px-5 pt-2 pb-2 transition cursor-pointer  border-b hover:bg-stone-100`}
+													key={e.id}
+												>
+													<div className="flex items-center justify-between">
+														<div className="relative flex gap-2">
+															<Avatar className="w-8 h-8">
+																<AvatarImage
+																	className="object-cover"
+																	src={getImageName(e.user)}
+																/>
+															</Avatar>
+															<div className="flex flex-col">
+																<p
+																	onClick={() =>
+																		router.push(`/${e.user.username}`)
+																	}
+																	className="text-sm"
+																>
+																	<span className="font-semibold hover:underline">
+																		{e.user.username}
+																	</span>{" "}
+																	{e.content}
+																</p>
+																<p className="text-[.6rem] text-stone-400">
+																	{getTimeAgo(e.createdAt)}
+																</p>
+															</div>
+														</div>
+														<AnimatePresence>
+															{!e.isRead && (
+																<motion.div
+																	initial={{ y: 5, opacity: 0 }}
+																	animate={{ y: 0, opacity: 1 }}
+																	exit={{ opacity: 0 }}
+																	className="w-3 h-3 -translate-y-2 bg-red-400 rounded-full"
+																></motion.div>
+															)}
+														</AnimatePresence>
+													</div>
+												</div>
+											);
+										})}
+									</div>
+								</div>
+							</motion.div>
+						)}
+					</AnimatePresence>
+				</div>
+
 				<DropdownMenu>
 					<DropdownMenuTrigger className="transition-opacity outline-none ">
 						<div className="flex items-center">

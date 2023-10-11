@@ -136,13 +136,50 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 
 			notificationConnection.on(
 				"ReceiveLikeNotification",
-				(message, postId) => {
-					// Handle the "Like" notification
-					// Display a notification to the user, update the UI, etc.
-					toast({
-						title: "Notification",
-						description: message,
-					});
+				(name, message, userId, postId) => {
+					if (currentUser.userId != userId) {
+						toast({
+							title: "Notification",
+							description: (
+								<div className="">
+									<span className="font-medium">{name}</span> {message}
+								</div>
+							),
+						});
+					}
+					getUser(currentUser.userId);
+				}
+			);
+			notificationConnection.on(
+				"ReceiveCommentNotification",
+				(name, message, userId, postId) => {
+					if (currentUser.userId != userId) {
+						toast({
+							title: "Notification",
+							description: (
+								<div className="">
+									<span className="font-medium">{name}</span> {message}
+								</div>
+							),
+						});
+					}
+					getUser(currentUser.userId);
+				}
+			);
+			notificationConnection.on(
+				"ReceiveFollowNotification",
+				(name, message, userId) => {
+					if (currentUser.userId != userId) {
+						toast({
+							title: "Notification",
+							description: (
+								<div className="">
+									<span className="font-medium">{name}</span> {message}
+								</div>
+							),
+						});
+					}
+					getUser(currentUser.userId);
 				}
 			);
 			const fulfilled = async () => {
@@ -159,6 +196,7 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 			startConnection();
 		}
 	}, [userData]);
+
 	const value = {
 		login,
 		register,

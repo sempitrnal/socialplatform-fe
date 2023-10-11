@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { Tooltip } from "@chakra-ui/react";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { getFormattedDate, getTimeAgo } from "@/utils/utils";
@@ -21,6 +22,7 @@ import {
 	HubConnection,
 	HubConnectionBuilder,
 } from "@microsoft/signalr";
+import Comment from "./comment";
 
 export interface PostProps {
 	post: Post;
@@ -48,9 +50,31 @@ export type PostLike = {
 const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
 	const { userData, notificationConnection } = useSP();
 	const [comment, setComment] = useState<string>("");
+
+	const [isViewMoreComments, setIsViewMoreComments] = useState<boolean>(false);
+	const { comments } = post;
+	const [visibleComments, setVisibleComments] = useState(
+		comments.length > 1 ? 2 : comments.length
+	);
+	const [commentsToShow, setCommentsToShow] = useState<any[]>(
+		comments.slice(0, visibleComments)
+	);
+
 	const commentInputRef = useRef<any>(null);
 	const postLikesRef = useRef();
-
+	const viewMoreComments = () => {
+		setCommentsToShow(comments);
+	};
+	const viewLessComments = () => {
+		setCommentsToShow(comments.slice(0, visibleComments));
+	};
+	useEffect(() => {
+		if (isViewMoreComments) {
+			viewMoreComments();
+		} else {
+			viewLessComments();
+		}
+	}, [comments]);
 	const likeAPost = async (
 		userId: number,
 		postId: number,
@@ -123,7 +147,7 @@ const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
 			.post(
 				`${process.env.API_BASE_URL}/post/commentapost?userId=${userData.id}&postId=${post.id}&content=${comment}`
 			)
-			.then((e) => {
+			.then(async (e) => {
 				console.log(e);
 				setPosts((prev) => {
 					return prev.map((e: any) => {
@@ -144,6 +168,18 @@ const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
 						return e;
 					});
 				});
+				await notificationConnection
+					?.invoke(
+						"NotifyComment",
+						userData.id,
+						post.id,
+						post.user.id.toString(),
+						comment
+					)
+
+					.catch((error) => {
+						console.log(error);
+					});
 			})
 			.catch((error) => {
 				console.log(error);
@@ -267,46 +303,29 @@ const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
 						Comments ({post.comments.length})
 					</div>
 					<div className="flex flex-col gap-5 mb-5">
-						{post.comments.map((e: any) => {
+						{commentsToShow.map((e: any) => {
 							const { user } = e;
-							return (
-								<div key={e.id} className="">
-									<div className="flex gap-2">
-										<Avatar
-											onClick={() => {
-												router.push(`/${user.username}`);
-											}}
-											className="w-10 h-10 rounded-full cursor-pointer hover:scale-[1.02] hover:shadow-md transition-all duration-300"
-										>
-											<AvatarImage
-												className="object-cover w-full"
-												src={
-													e.user.imageName !== "" && e.user.imageName !== null
-														? `https://localhost:7221/images/users/${e.user.imageName}`
-														: "/static/default-profile-pic.png"
-												}
-											/>
-										</Avatar>
-										<div className="text-sm ">
-											<div className="flex flex-col gap-1 px-3 py-2 bg-white rounded-xl w-max">
-												<p
-													onClick={() => {
-														router.push(`/${user.username}`);
-													}}
-													className="text-xs font-semibold cursor-pointer hover:underline"
-												>
-													{user.firstName} {user.lastName}
-												</p>
-												<p className="font-normal">{e.content}</p>
-											</div>
-											<p className=" text-[.7rem] translate-x-2 text-stone-400">
-												{getTimeAgo(e.commentCreatedAt)}
-											</p>
-										</div>
-									</div>
-								</div>
-							);
+							return <Comment e={e} user={user} key={e.id} thisKey={e.id} />;
 						})}
+
+						{comments.length > 5 && (
+							<p
+								onClick={() => {
+									if (!isViewMoreComments) {
+										viewMoreComments();
+									} else {
+										viewLessComments();
+									}
+									setIsViewMoreComments(!isViewMoreComments);
+								}}
+								className="text-sm cursor-pointer hover:underline text-stone-500 underline-offset-2"
+							>
+								{isViewMoreComments
+									? " View less comments"
+									: `View ${comments.length - visibleComments} more
+								${comments.length - visibleComments === 1 ? "comment" : "comments"}`}
+							</p>
+						)}
 					</div>
 				</div>
 			)}

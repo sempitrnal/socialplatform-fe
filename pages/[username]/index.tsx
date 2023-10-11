@@ -28,7 +28,7 @@ const User = () => {
 	const [userNotFound, setUserNotFound] = useState<boolean>(false);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [isPostsLoading, setIsPostsLoading] = useState<boolean>(true);
-	const { currentUser, userData } = useSP();
+	const { currentUser, userData, notificationConnection } = useSP();
 	const router = useRouter();
 	const { username } = router.query;
 	const { toast } = useToast();
@@ -77,7 +77,7 @@ const User = () => {
 				.post(
 					`${process.env.API_BASE_URL}/user/followAUser?username=${username}&userToFollow=${userToFollow}`
 				)
-				.then((e) => {
+				.then(async (e) => {
 					toast({
 						description: (
 							<div className="flex items-center gap-2 ">
@@ -92,6 +92,15 @@ const User = () => {
 							</div>
 						),
 					});
+
+					await notificationConnection
+						?.invoke("NotifyFollow", userData.id, user.id.toString())
+						.then((e) => {
+							console.log(e);
+						})
+						.catch((error) => {
+							console.log(error);
+						});
 				});
 		} catch (error) {
 			console.log(error);
