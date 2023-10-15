@@ -20,27 +20,22 @@ import { useEffect, useRef, useState } from "react";
 import { ClipLoader } from "react-spinners";
 import { DialogClose } from "@radix-ui/react-dialog";
 import UserDialog from "@/components/user-dialog";
+import NotFound from "@/components/not-found";
 
 const User = () => {
-	const [user, setUser] = useState<any>();
-	const [posts, setPosts] = useState<any>();
-
-	const [userNotFound, setUserNotFound] = useState<boolean>(false);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [isPostsLoading, setIsPostsLoading] = useState<boolean>(true);
-	const { currentUser, userData, notificationConnection } = useSP();
+	const { currentUser, userData, notificationConnection, redirect } = useSP();
 	const router = useRouter();
 	const { username } = router.query;
 	const { toast } = useToast();
+
+	const [user, setUser] = useState<any>();
+	const [userNotFound, setUserNotFound] = useState<boolean>(false);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [posts, setPosts] = useState<any>();
+	const [isPostsLoading, setIsPostsLoading] = useState<boolean>(true);
+
 	const followingDialogRef = useRef(null);
 	const followerDialogRef = useRef(null);
-	const redirect = async () => {
-		router.push("/");
-		toast({
-			title: "You are not logged in",
-			description: "Please login to continue",
-		});
-	};
 
 	const getUser = async (username: string) => {
 		await axios
@@ -59,16 +54,17 @@ const User = () => {
 	};
 
 	const getPosts = async (id: string) => {
-		try {
-			await axios.get(`${process.env.API_BASE_URL}/posts/${id}`).then((e) => {
+		await axios
+			.get(`${process.env.API_BASE_URL}/posts/${id}`)
+			.then((e) => {
 				setPosts(e.data);
 				setTimeout(() => {
 					setIsPostsLoading(false);
-				}, 2000);
+				}, 1000);
+			})
+			.catch((e) => {
+				console.log(e);
 			});
-		} catch (error) {
-			console.log(error);
-		}
 	};
 
 	const followHandler = async (username: string, userToFollow: string) => {
@@ -132,21 +128,27 @@ const User = () => {
 			console.log(error);
 		}
 	};
+	//useEffect for user data based on the username in the query
 	useEffect(() => {
 		if (username !== undefined) {
 			getUser(username as string);
 		}
 	}, [username]);
+
+	//useEffect for posts based on the user data
 	useEffect(() => {
 		if (user) {
 			getPosts(user.id);
 		}
 	}, [user]);
+
+	//useEffect for redirecting if user is not logged in
 	useEffect(() => {
 		if (currentUser == undefined) {
 			redirect();
 		}
 	}, [currentUser]);
+
 	if (isLoading)
 		return (
 			<Layout>
@@ -155,40 +157,10 @@ const User = () => {
 		);
 
 	if (userNotFound) {
-		return (
-			<div className="min-h-screen overflow-y-hidden">
-				<Head>
-					<title>404 Not found</title>
-				</Head>
-				<HomeNav />
-				<div className="mt-[5.5rem] flex justify-center items-center min-h-[85vh]">
-					<div className="flex flex-col items-center gap-2">
-						<p className="text-3xl font-bold text-center uppercase">oops!</p>
-						<p className="text-xl text-stone-500">
-							We&apos;re sorry, but the page you&apos;re looking for cannot be
-							found.
-						</p>
-						<p className="mb-5 text-sm text-stone-400">
-							You can go back to the home page by clicking the button below.
-						</p>
-
-						<div className="flex flex-col items-center justify-center gap-4">
-							<Logo />
-							<Separator className="w-[10rem]" />
-							<div
-								className="cursor-pointer hover:underline text-stone-500 underline-offset-4"
-								onClick={() => {
-									router.back();
-								}}
-							>{` Back`}</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		);
+		return <NotFound />;
 	}
 	return (
-		<div className="mx-[25rem] min-h-screen">
+		<div className="mx-[5rem] lg:mx-[8rem] 2xl:mx-[25rem] min-h-screen">
 			<Head>
 				<title>
 					{user.firstName} {user.lastName}
@@ -366,6 +338,7 @@ const User = () => {
 						{posts.map((post: any) => {
 							return (
 								<Post
+									getPosts={getPosts}
 									setPosts={setPosts}
 									key={post.id}
 									thisKey={post.id}

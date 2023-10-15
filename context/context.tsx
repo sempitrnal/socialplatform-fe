@@ -9,6 +9,7 @@ import {
 } from "@microsoft/signalr";
 import axios, { Axios, AxiosError } from "axios";
 import jwtDecode from "jwt-decode";
+import { useRouter } from "next/router";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type SPContextType = {
@@ -23,6 +24,8 @@ type SPContextType = {
 	setUserData?: any;
 	notificationConnection?: HubConnection | null;
 	setNotificationConnection?: any;
+	chatConnection?: HubConnection | null;
+	redirect?: any;
 };
 
 const SPContextDefaultValues: SPContextType = {
@@ -37,6 +40,8 @@ const SPContextDefaultValues: SPContextType = {
 	setUserData: () => {},
 	notificationConnection: null,
 	setNotificationConnection: () => {},
+	chatConnection: null,
+	redirect: () => {},
 };
 const SPContext = createContext<SPContextType>(SPContextDefaultValues);
 
@@ -48,8 +53,13 @@ export interface UserDto {
 	password: string;
 }
 export function SPProvider({ children }: { children: React.ReactNode }) {
+	const router = useRouter();
+
+	// notification connection state
 	const [notificationConnection, setNotificationConnection] =
 		useState<HubConnection>();
+
+	const [chatConnection, setChatConnection] = useState<HubConnection>();
 
 	//login states
 
@@ -58,6 +68,7 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 			? JSON.parse(localStorage.getItem("user")!)
 			: null
 	);
+
 	const [userData, setUserData] = useState<any>();
 
 	//register states
@@ -70,11 +81,15 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 			});
 		} catch (error) {}
 	};
+
+	// useEffect for getting user data
 	useEffect(() => {
 		if (currentUser) {
 			getUser(currentUser?.userId);
 		}
 	}, [currentUser]);
+
+	// authentication and registration functions
 	const login = async (userDto: UserDto) => {
 		try {
 			const res = await axios.post(process.env.API_BASE_URL + "/auth/login", {
@@ -97,13 +112,14 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 			return error.response.data; // Return the error message
 		}
 	};
+
 	const register = async (registerDto: RegisterDto) => {
 		try {
 			await axios
 				.post(process.env.API_BASE_URL + "/user/register", {
 					firstName: registerDto.firstName,
 					lastName: registerDto.lastName,
-					nickname: registerDto.nickName ?? registerDto,
+					nickname: registerDto.nickname ?? registerDto,
 					username: registerDto.username,
 					birthdate: registerDto.birthdate,
 					pronouns: parseInt(registerDto.pronouns!),
@@ -118,6 +134,7 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 		}
 	};
 
+	// useEffect for hub connections
 	useEffect(() => {
 		if (userData) {
 			const notificationConnection = new HubConnectionBuilder()
@@ -127,11 +144,28 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 				})
 				.withAutomaticReconnect()
 				.build();
-
-			const startConnection = async () => {
-				await notificationConnection.start().then(fulfilled, rejected);
+			const chatConnection = new HubConnectionBuilder()
+				.withUrl(`${process.env.BACKEND_BASE_URL}/chat`, {
+					skipNegotiation: true,
+					transport: HttpTransportType.WebSockets,
+				})
+				.withAutomaticReconnect()
+				.build();
+			const startNotificationConnection = async () => {
+				await notificationConnection
+					.start()
+					.then(
+						fulfilledNotificationConnection,
+						rejectedNotificationConnection
+					);
+			};
+			const startChatConnection = async () => {
+				await chatConnection
+					.start()
+					.then(fulfilledChatConnection, rejectedChatConnection);
 			};
 			setNotificationConnection(notificationConnection);
+			setChatConnection(chatConnection);
 			notificationConnection.on("UserJoined", (userId) => {});
 
 			notificationConnection.on(
@@ -182,20 +216,37 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 					getUser(currentUser.userId);
 				}
 			);
-			const fulfilled = async () => {
+			const fulfilledNotificationConnection = async () => {
 				console.log("connected");
-				console.log(userData?.id.toString());
 				await notificationConnection.send(
 					"OnConnectedAsync",
 					userData?.id.toString()
 				);
 			};
-			const rejected = () => {
-				console.log("rejected");
+			const rejectedNotificationConnection = () => {
+				console.log("rejectedNotificationConnection");
 			};
-			startConnection();
+
+			const fulfilledChatConnection = async () => {
+				console.log("chat connected!");
+				await chatConnection.send("OnConnectedAsync", userData?.id.toString());
+			};
+			const rejectedChatConnection = () => {
+				console.log("chat rejected!");
+			};
+
+			startNotificationConnection();
+			startChatConnection();
 		}
 	}, [userData]);
+
+	const redirect = () => {
+		router.push("/");
+		toast({
+			title: "You are not logged in",
+			description: "Please login to continue",
+		});
+	};
 
 	const value = {
 		login,
@@ -209,7 +260,9 @@ export function SPProvider({ children }: { children: React.ReactNode }) {
 		setUserData,
 		notificationConnection,
 		setNotificationConnection,
+		chatConnection,
+		redirect,
 	};
-	useEffect(() => {}, []);
+
 	return <SPContext.Provider value={value}>{children}</SPContext.Provider>;
 }

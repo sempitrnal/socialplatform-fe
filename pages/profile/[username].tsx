@@ -19,10 +19,9 @@ import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera } from "lucide-react";
 import { useRouter } from "next/router";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const Settings = () => {
-	const { username } = useRouter().query;
 	const router = useRouter();
 	const { userData, getUser, setUserData } = useSP();
 	const [selectedFile, setSelectedFile] = useState<any>();
@@ -31,6 +30,7 @@ const Settings = () => {
 	const [imageHover, setImageHover] = useState<boolean>(false);
 	const [request, setRequest] = useState<any>();
 	const [isEdit, setIsEdit] = useState(false);
+
 	const handleFileInputChange = (e: any) => {
 		const file = e.target.files[0];
 
@@ -45,8 +45,9 @@ const Settings = () => {
 			reader.readAsDataURL(file);
 		}
 	};
-	console.log(request);
 	const ref = useRef();
+
+	// useEffect for getting user data
 	useEffect(() => {
 		if (typeof window !== "undefined") {
 			if (userData) {
@@ -133,7 +134,7 @@ const Settings = () => {
 	const inputHandler = (e: React.FormEvent<HTMLInputElement>) => {
 		const { name, value } = e.target as HTMLInputElement;
 		setRequest({ ...request, [name]: value });
-		console.log(value);
+
 		const validateInput = (isValid: boolean, errors: string[]) => {
 			setErrors((prev: RegisterInputErrors) => ({
 				...prev,
@@ -199,6 +200,7 @@ const Settings = () => {
 		}
 	};
 	const update = async () => {
+		console.log(selectedFile);
 		const formData = new FormData();
 		formData.append("id", userData.id);
 		formData.append("firstName", request.firstName);

@@ -40,7 +40,7 @@ const Home = () => {
 				setIsLoading(false);
 			}
 		}
-	}, [currentUser]);
+	}, []);
 
 	const getPosts = async () => {
 		if (currentUser) {
@@ -56,13 +56,25 @@ const Home = () => {
 			} catch (error) {}
 		}
 	};
+
 	useEffect(() => {
-		notificationConnection?.on(
-			"ReceiveLikeNotification",
-			(name, message, userId, postId) => {
-				getPosts();
-			}
-		);
+		// This useEffect depends on posts and will run whenever posts change.
+		// You don't need separate useEffects for different events.
+		if (posts) {
+			notificationConnection?.on(
+				"ReceiveLikeNotification",
+				(name, message, userId, postId) => {
+					getPosts();
+				}
+			);
+
+			notificationConnection?.on(
+				"ReceiveCommentNotification",
+				(name, message, userId, postId) => {
+					getPosts();
+				}
+			);
+		}
 	}, [posts]);
 	useEffect(() => {
 		getPosts();
@@ -108,14 +120,14 @@ const Home = () => {
 						alt="chopper"
 					/>
 				</div>
-				<div className="flex flex-col justify-start w-full lg:w-[40%] min-h-screen gap-10 px-10 py-10 border-l border-r">
+				<div className="flex flex-col justify-start w-full relative lg:w-[40%] min-h-screen gap-10 px-10 py-10 border-l border-r">
 					{isPostsLoading ? (
 						<div className="flex flex-col gap-10">
 							<PostSkeleton />
 							<PostSkeleton />
 							<PostSkeleton withPic />
 						</div>
-					) : posts ? (
+					) : posts.length > 0 ? (
 						posts.map((post: any) => {
 							return (
 								<Post
@@ -129,7 +141,9 @@ const Home = () => {
 							);
 						})
 					) : (
-						""
+						<div className="flex flex-col items-center gap-5 justify-center h-[60vh]">
+							<p>wala pay posts mingaw kaau huhubells</p>
+						</div>
 					)}
 				</div>
 				<div className="fixed hidden lg:block right-0 w-[30%] p-10">

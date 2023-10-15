@@ -1,35 +1,51 @@
 /* eslint-disable @next/next/no-img-element */
-import { Tooltip } from "@chakra-ui/react";
-import { Avatar, AvatarImage } from "./ui/avatar";
+import { useSP } from "@/context/context";
 import { getFormattedDate, getTimeAgo } from "@/utils/utils";
-import { AiFillStar, AiOutlineStar } from "react-icons/ai";
-import { Input } from "./ui/input";
-import { useRouter } from "next/router";
-import { UserDto, useSP } from "@/context/context";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/router";
+import { memo, useEffect, useRef, useState } from "react";
+
+//components
+import {
+	Menu,
+	MenuButton,
+	MenuItem,
+	MenuList,
+	Modal,
+	ModalBody,
+	ModalCloseButton,
+	ModalContent,
+	ModalFooter,
+	ModalHeader,
+	ModalOverlay,
+	Tooltip,
+	useDisclosure,
+} from "@chakra-ui/react";
+import Comment from "./comment";
+import { Avatar, AvatarImage } from "./ui/avatar";
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTrigger,
 } from "./ui/dialog";
-import { get } from "http";
+import { Input } from "./ui/input";
 import UserDialog from "./user-dialog";
-import { memo, useEffect, useRef, useState } from "react";
-import {
-	HttpTransportType,
-	HubConnection,
-	HubConnectionBuilder,
-} from "@microsoft/signalr";
-import Comment from "./comment";
 
+// icons
+import { AiFillStar, AiOutlineStar } from "react-icons/ai";
+import { PiDotsThreeOutlineLight } from "react-icons/pi";
+import { MdStart } from "react-icons/md";
+import { FiTrash2 } from "react-icons/fi";
+import { Button } from "./ui/button";
+import { DialogClose } from "@radix-ui/react-dialog";
 export interface PostProps {
 	post: Post;
 	user: any;
-	thisKey: number;
-	setPosts: any;
-	getPosts: any;
+	thisKey?: number;
+	setPosts?: any;
+	getPosts?: any;
 }
 
 export type Post = {
@@ -48,33 +64,39 @@ export type PostLike = {
 };
 
 const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
-	const { userData, notificationConnection } = useSP();
-	const [comment, setComment] = useState<string>("");
-
-	const [isViewMoreComments, setIsViewMoreComments] = useState<boolean>(false);
+	const router = useRouter();
 	const { comments } = post;
+	const { userData, notificationConnection } = useSP();
+	const { isOpen, onOpen, onClose } = useDisclosure();
+
+	const [comment, setComment] = useState<string>("");
+	const [isViewMoreComments, setIsViewMoreComments] = useState<boolean>(false);
 	const [visibleComments, setVisibleComments] = useState(
 		comments.length > 1 ? 2 : comments.length
-	);
-	const [commentsToShow, setCommentsToShow] = useState<any[]>(
-		comments.slice(0, visibleComments)
 	);
 
 	const commentInputRef = useRef<any>(null);
 	const postLikesRef = useRef();
+	const commentsToShow = isViewMoreComments
+		? post.comments
+		: post.comments.slice(0, 2);
+
 	const viewMoreComments = () => {
-		setCommentsToShow(comments);
+		setIsViewMoreComments(true);
 	};
+
 	const viewLessComments = () => {
-		setCommentsToShow(comments.slice(0, visibleComments));
+		setIsViewMoreComments(false);
 	};
+
 	useEffect(() => {
 		if (isViewMoreComments) {
 			viewMoreComments();
 		} else {
 			viewLessComments();
 		}
-	}, [comments]);
+	}, [isViewMoreComments]);
+
 	const likeAPost = async (
 		userId: number,
 		postId: number,
@@ -180,6 +202,12 @@ const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
 					.catch((error) => {
 						console.log(error);
 					});
+
+				setIsViewMoreComments(true);
+				window.scrollTo({
+					top: 500,
+					behavior: "smooth",
+				});
 			})
 			.catch((error) => {
 				console.log(error);
@@ -189,45 +217,97 @@ const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
 		const { value } = e.target;
 		setComment(value);
 	};
-
-	const router = useRouter();
-
+	console.log(isViewMoreComments);
+	const isInThePost = router.query.postId == post.id.toString();
+	const isPostOfTheCurrentUser = userData?.id === post.user.id;
 	return (
 		<div key={thisKey} className="px-5 py-5 rounded-lg bg-stone-100 ">
-			<div className="flex items-center gap-3">
-				<Avatar
-					onClick={() => {
-						router.push(`/${user.username}`);
-					}}
-					className="w-12 h-12 transition-all duration-300 rounded-full shadow-sm cursor-pointer hover:scale-[1.02] hover:shadow-md"
-				>
-					<AvatarImage
-						className="object-cover w-full"
-						src={
-							user.imageName == ""
-								? "/static/default-profile-pic.png"
-								: `https://localhost:7221/images/users/${user.imageName}`
-						}
-					/>
-				</Avatar>
-				<div className="">
-					<p
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-3">
+					<Avatar
 						onClick={() => {
 							router.push(`/${user.username}`);
 						}}
-						className="text-sm font-medium transition duration-300 cursor-pointer hover:text-stone-700/80 text-stone-700"
+						className="w-12 h-12 transition-all duration-300 rounded-full shadow-sm cursor-pointer hover:scale-[1.02] hover:shadow-md"
 					>
-						{user.firstName} {user.lastName}
-					</p>
-					<Tooltip
-						placement="top"
-						label={getFormattedDate(post.postCreatedAt)}
-						className="p-2 text-xs bg-white rounded-md shadow-md text-stone-500 "
-					>
-						<p className="text-xs font-medium transition duration-300 cursor-pointer w-max text-stone-400 ">
-							{getTimeAgo(post.postCreatedAt)}
+						<AvatarImage
+							className="object-cover w-full"
+							src={
+								user.imageName == ""
+									? "/static/default-profile-pic.png"
+									: `https://localhost:7221/images/users/${user.imageName}`
+							}
+						/>
+					</Avatar>
+					<div className="">
+						<p
+							onClick={() => {
+								router.push(`/${user.username}`);
+							}}
+							className="text-sm font-medium transition duration-300 cursor-pointer hover:text-stone-700/80 text-stone-700"
+						>
+							{user.firstName} {user.lastName}
 						</p>
-					</Tooltip>
+						<Tooltip
+							placement="top"
+							label={getFormattedDate(post.postCreatedAt)}
+							className="p-2 text-xs bg-white rounded-md shadow-md text-stone-500 "
+						>
+							<p className="text-xs font-medium transition duration-300 cursor-pointer w-max text-stone-400 ">
+								{getTimeAgo(post.postCreatedAt)}
+							</p>
+						</Tooltip>
+					</div>
+				</div>
+
+				<div className="text-xl -translate-y-2">
+					<Menu>
+						<MenuButton>
+							<PiDotsThreeOutlineLight />
+						</MenuButton>
+						<MenuList className="flex flex-col p-1 overflow-hidden text-sm bg-white rounded-md shadow-md">
+							{!isInThePost && (
+								<MenuItem
+									onClick={() =>
+										router.push(`/${post.user.username}/post/${post.id}`)
+									}
+									className="flex items-center gap-2 p-2 transition rounded-sm hover:bg-stone-100"
+								>
+									<MdStart />
+									View post
+								</MenuItem>
+							)}
+							{isPostOfTheCurrentUser && (
+								<MenuItem className="p-2 text-red-400 transition rounded-sm hover:bg-stone-100 ">
+									<Dialog>
+										<DialogTrigger asChild>
+											<div className="flex items-center gap-2 text-red-400 ">
+												<FiTrash2 />
+												Delete
+											</div>
+										</DialogTrigger>
+										<DialogContent className="w-max">
+											<DialogHeader>Delete post</DialogHeader>
+											<div className="flex flex-col justify-center gap-2">
+												<p className="mb-5 text-sm text-stone-500">
+													Are you sure you want to delete this post?
+												</p>
+												<div className="flex items-center gap-2">
+													<DialogClose className="p-3 py-1.5 shadow-sm rounded-md bg-stone-200 hover:bg-stone-200/80 transition">
+														Cancel
+													</DialogClose>
+
+													<Button variant="destructive" className="w-max">
+														Delete
+													</Button>
+												</div>
+											</div>
+										</DialogContent>
+									</Dialog>
+								</MenuItem>
+							)}
+						</MenuList>
+					</Menu>
 				</div>
 			</div>
 			<div className="mt-5">
@@ -308,7 +388,7 @@ const Post = ({ post, user, thisKey, setPosts }: PostProps) => {
 							return <Comment e={e} user={user} key={e.id} thisKey={e.id} />;
 						})}
 
-						{comments.length > 5 && (
+						{comments.length > 2 && (
 							<p
 								onClick={() => {
 									if (!isViewMoreComments) {

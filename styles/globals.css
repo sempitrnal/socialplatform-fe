@@ -58,3 +58,7 @@ select {
 	appearance: none;
 	cursor: pointer;
 }
+
+::-webkit-scrollbar {
+	display: none;
+}

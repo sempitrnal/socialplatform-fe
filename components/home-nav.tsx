@@ -36,6 +36,7 @@ import { useRef } from "react";
 import { RiImageAddFill } from "react-icons/ri";
 import Image from "next/image";
 import { getImageName, getTimeAgo } from "@/utils/utils";
+import Notification from "./notification";
 export interface Post {
 	userId: number;
 	description: string;
@@ -45,22 +46,37 @@ export interface Post {
 const HomeNav = () => {
 	const { toast } = useToast();
 	const { setUser, userData, setUserData } = useSP();
-	const [searchUsers, setSearchUsers] = useState<any>([]);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-
+	const router = useRouter();
 	const PostDefaultValues = {
 		userId: userData?.id,
 		description: "",
 		imageFile: undefined,
 	};
-	const [post, setPost] = useState<Post>(PostDefaultValues);
+
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+
+	// search states
+	const [searchUsers, setSearchUsers] = useState<any>([]);
+	const [search, setSearch] = useState<string>("");
+
+	// notifs states
 	const [notifications, setNotifications] = useState<any[]>([]);
 	const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>();
-	const router = useRouter();
+	const [isFocused, setIsFocused] = useState<boolean>(false);
 
+	// post states
+	const [post, setPost] = useState<Post>(PostDefaultValues);
+	const [selectedFile, setSelectedFile] = useState<any>();
+	const [previewUrl, setPreviewUrl] = useState<any>();
+
+	//
+
+	//refs for dom manipulation
 	const createPostRef = useRef<any>();
 	const imageUploadRef = useRef<any>();
 	const searchRef = useRef<any>();
+	const notificationDialogRef = useRef<any>();
+	const dialogCloseRef = useRef<any>();
 	const getNotifications = async () => {
 		await axios
 			.get(`${process.env.API_BASE_URL}/user/notifications/${userData?.id}`)
@@ -71,9 +87,7 @@ const HomeNav = () => {
 				console.log(e);
 			});
 	};
-	useEffect(() => {
-		getNotifications();
-	}, [userData]);
+
 	const logout = () => {
 		localStorage.removeItem("user");
 
@@ -84,11 +98,12 @@ const HomeNav = () => {
 			title: "Logged out",
 			description: "You have been logged out!",
 		});
+		router.push("/");
+		console.log(document.body.style);
+		document.body.style.setProperty("pointerEvents", "");
+		document.body.removeAttribute("style");
 	};
-	const [search, setSearch] = useState<string>("");
-	const [isFocused, setIsFocused] = useState<boolean>(false);
-	const [selectedFile, setSelectedFile] = useState<any>();
-	const [previewUrl, setPreviewUrl] = useState<any>();
+
 	const focusHandler = (e: React.FocusEvent<HTMLInputElement>) => {
 		setIsFocused(true);
 	};
@@ -155,7 +170,7 @@ const HomeNav = () => {
 			reader.readAsDataURL(file);
 		}
 	};
-	const notificationDialogRef = useRef<any>();
+
 	const openNotifications = async () => {
 		setIsNotificationsOpen(!isNotificationsOpen);
 		if (!isNotificationsOpen) {
@@ -173,6 +188,12 @@ const HomeNav = () => {
 			}, 500);
 		}
 	};
+
+	useEffect(() => {
+		if (userData) {
+			getNotifications();
+		}
+	}, [userData]);
 	useEffect(() => {
 		const handleClickOutside = (event) => {
 			if (
@@ -198,6 +219,7 @@ const HomeNav = () => {
 			</Layout>
 		);
 	}
+
 	return (
 		<nav className="fixed top-0 left-0 right-0 z-50 flex justify-between px-20 py-5 bg-white shadow-sm">
 			<Tooltip
@@ -208,11 +230,13 @@ const HomeNav = () => {
 			>
 				<div className="fixed bottom-10 right-20">
 					<Dialog>
-						<DialogTrigger asChild>
-							<div className="flex items-center justify-center bg-[#eaaa5d] rounded-full w-14 h-14 text-white shadow-md hover:scale-[1.03] transition cursor-pointer">
-								<Plus />
-							</div>
-						</DialogTrigger>
+						{router.pathname !== "/messages" && (
+							<DialogTrigger asChild>
+								<div className="flex items-center justify-center bg-black rounded-full w-14 h-14 text-white shadow-md hover:scale-[1.03] transition cursor-pointer">
+									<Plus />
+								</div>
+							</DialogTrigger>
+						)}
 						<DialogContent className="">
 							<DialogHeader className="font-medium">
 								Create a new post
@@ -364,20 +388,25 @@ const HomeNav = () => {
 					</Link>
 				</div>
 
-				<div className="rounded-full h-12 w-12 flex justify-center items-center bg-[#dddddd] hover:bg-[#cfcfcf] transition duration-300 relative ">
-					<Bell onClick={openNotifications} className="cursor-pointer" />
-					<AnimatePresence initial={false}>
-						{notifications.filter((e) => e.isRead == false).length > 0 && (
-							<motion.div
-								initial={{ y: 5, opacity: 0 }}
-								animate={{ y: 0, opacity: 1 }}
-								exit={{ scale: 0, opacity: 0 }}
-								className="absolute flex items-center justify-center w-5 h-5 p-2 text-xs text-white bg-red-400 rounded-full -top-1 -right-1"
-							>
-								{notifications.filter((e) => e.isRead == false).length}
-							</motion.div>
-						)}
-					</AnimatePresence>
+				<div className="relative">
+					<div
+						onClick={openNotifications}
+						className="rounded-full h-12 w-12 flex justify-center items-center bg-[#dddddd] hover:bg-[#cfcfcf] transition duration-300  cursor-pointer"
+					>
+						<Bell className="" />
+						<AnimatePresence initial={false}>
+							{notifications.filter((e) => e.isRead == false).length > 0 && (
+								<motion.div
+									initial={{ y: 5, opacity: 0 }}
+									animate={{ y: 0, opacity: 1 }}
+									exit={{ scale: 0, opacity: 0 }}
+									className="absolute flex items-center justify-center w-5 h-5 p-2 text-xs text-white bg-red-400 rounded-full -top-1 -right-1"
+								>
+									{notifications.filter((e) => e.isRead == false).length}
+								</motion.div>
+							)}
+						</AnimatePresence>
+					</div>
 					<AnimatePresence>
 						{isNotificationsOpen && (
 							<motion.div
@@ -393,49 +422,12 @@ const HomeNav = () => {
 									</h2>
 									<div className="flex flex-col pt-2 ">
 										{notifications.map((e) => {
-											console.log(e);
 											return (
-												<div
-													className={`px-5 pt-2 pb-2 transition cursor-pointer  border-b hover:bg-stone-100`}
+												<Notification
+													notification={e}
 													key={e.id}
-												>
-													<div className="flex items-center justify-between">
-														<div className="relative flex gap-2">
-															<Avatar className="w-8 h-8">
-																<AvatarImage
-																	className="object-cover"
-																	src={getImageName(e.user)}
-																/>
-															</Avatar>
-															<div className="flex flex-col">
-																<p
-																	onClick={() =>
-																		router.push(`/${e.user.username}`)
-																	}
-																	className="text-sm"
-																>
-																	<span className="font-semibold hover:underline">
-																		{e.user.username}
-																	</span>{" "}
-																	{e.content}
-																</p>
-																<p className="text-[.6rem] text-stone-400">
-																	{getTimeAgo(e.createdAt)}
-																</p>
-															</div>
-														</div>
-														<AnimatePresence>
-															{!e.isRead && (
-																<motion.div
-																	initial={{ y: 5, opacity: 0 }}
-																	animate={{ y: 0, opacity: 1 }}
-																	exit={{ opacity: 0 }}
-																	className="w-3 h-3 -translate-y-2 bg-red-400 rounded-full"
-																></motion.div>
-															)}
-														</AnimatePresence>
-													</div>
-												</div>
+													thisKey={e.id}
+												/>
 											);
 										})}
 									</div>
@@ -446,7 +438,11 @@ const HomeNav = () => {
 				</div>
 
 				<DropdownMenu>
-					<DropdownMenuTrigger className="transition-opacity outline-none ">
+					<DropdownMenuTrigger
+						ref={dialogCloseRef}
+						asChild
+						className="transition-opacity outline-none "
+					>
 						<div className="flex items-center">
 							<Avatar className="border shadow-sm ">
 								<AvatarImage
@@ -489,7 +485,10 @@ const HomeNav = () => {
 									</DialogDescription>
 								</DialogHeader>
 								<div className="flex justify-end gap-2 mt-5">
-									<DialogClose className="px-3 text-sm font-medium transition-colors rounded-md bg-stone-200 hover:bg-stone-200/80">
+									<DialogClose
+										ref={dialogCloseRef}
+										className="px-3 text-sm font-medium transition-colors rounded-md bg-stone-200 hover:bg-stone-200/80"
+									>
 										Cancel
 									</DialogClose>
 									<Button onClick={logout}>Logout</Button>

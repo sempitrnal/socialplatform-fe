@@ -17,7 +17,7 @@ export interface RegisterDto {
 	firstName: string;
 	lastName: string;
 	username: string;
-	nickName?: string;
+	nickname?: string;
 	birthdate: string;
 	pronouns?: string;
 	password: string;
@@ -27,7 +27,7 @@ export const RegisterDtoDefaultValues: RegisterDto = {
 	firstName: "",
 	lastName: "",
 	username: "",
-	nickName: "",
+	nickname: "",
 	birthdate: "",
 	pronouns: "1",
 	password: "",
@@ -154,8 +154,8 @@ const Register = () => {
 					firstName: capitalizeFirstLetter(registerDto.firstName),
 					lastName: capitalizeFirstLetter(registerDto.lastName),
 					nickname:
-						registerDto.nickName != undefined && registerDto.nickName != ""
-							? capitalizeFirstLetter(registerDto.nickName!)
+						registerDto.nickname != undefined && registerDto.nickname != ""
+							? capitalizeFirstLetter(registerDto.nickname!)
 							: null,
 					username: registerDto.username,
 					birthdate: registerDto.birthdate,
@@ -394,7 +394,7 @@ const Register = () => {
 						blurHandler={blurHandler}
 						thisRef={inputRefs.nickname}
 						optional
-						value={request.nickName}
+						value={request.nickname}
 					/>
 				</div>
 				<BosInput

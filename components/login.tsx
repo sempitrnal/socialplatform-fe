@@ -2,7 +2,7 @@ import { UserDto, useSP } from "@/context/context";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ClipLoader } from "react-spinners";
 import BosInput from "./myinput";
 import { Button } from "./ui/button";
@@ -102,7 +102,11 @@ const Login = () => {
 			loginHandler();
 		}
 	};
-
+	useEffect(() => {
+		document.body.style.setProperty("pointerEvents", "");
+		document.body.removeAttribute("style");
+		console.log(document.body.attributes);
+	}, []);
 	return (
 		<motion.div className="w-[25rem] flex flex-col gap-5 justify-center items-center border rounded-lg p-10 pt-12">
 			<AnimatePresence>
